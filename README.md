@@ -83,8 +83,8 @@ if the machine is shared. Back up by copying that directory. See
 
 - **Locally** at `http://127.0.0.1:8000/`, with its main button pointing into the app.
 - **Publicly** via GitHub Pages — set Pages to deploy from the `main` branch `/docs`
-  folder, and replace the `YOUR-ORG` placeholders in that file with the repository URL.
-  Off localhost the same button becomes "Get started" and links to the install steps.
+  folder, which publishes it at https://jitenverma076.github.io/Kiroku/. Off localhost
+  the same button becomes "Get started" and links to the install steps.
 
 The Vite dev server (`npm run dev`, port 5173) serves the app at `/` instead, so
 development goes straight to the UI.
