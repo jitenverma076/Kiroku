@@ -3,7 +3,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
-    { "source": "/((?!assets/|.*\\.[a-z0-9]+$).*)", "destination": "/index.html" }
+    { "source": "/((?!assets/|.*\\.[a-z0-9]+$).*)", "destination": "/app.html" }
   ]
 }

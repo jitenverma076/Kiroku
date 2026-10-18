@@ -77,6 +77,8 @@ FRONTEND_DIST = os.path.join(PROJECT_ROOT, "frontend", "dist")
 # The landing page is one file, shared by the local app and GitHub Pages.
 LANDING_DIR = os.path.join(PROJECT_ROOT, "docs")
 LANDING_PAGE = os.path.join(LANDING_DIR, "index.html")
+# The build renames the SPA entry so the landing can own index.html.
+SPA_ENTRY = "app.html" if os.path.isfile(os.path.join(FRONTEND_DIST, "app.html")) else "index.html"
 
 if os.path.isdir(FRONTEND_DIST):
     app.mount(
@@ -100,7 +102,7 @@ if os.path.isdir(FRONTEND_DIST):
         if not spa_path:
             if os.path.isfile(LANDING_PAGE):
                 return FileResponse(LANDING_PAGE)
-            return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+            return FileResponse(os.path.join(FRONTEND_DIST, SPA_ENTRY))
 
         for base in (FRONTEND_DIST, LANDING_DIR):
             candidate = os.path.join(base, spa_path)
@@ -111,7 +113,7 @@ if os.path.isdir(FRONTEND_DIST):
             if os.path.isfile(candidate):
                 return FileResponse(candidate)
 
-        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+        return FileResponse(os.path.join(FRONTEND_DIST, SPA_ENTRY))
 
     log.info("Serving React SPA from %s", FRONTEND_DIST)
 else:

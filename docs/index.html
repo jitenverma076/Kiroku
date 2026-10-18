@@ -53,29 +53,56 @@
   nav .links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
   nav .links a { color: var(--body); }
 
-  header { padding: 72px 0 48px; }
-  h1 {
-    font-size: 60px; font-weight: 400; line-height: 1.05;
-    letter-spacing: -0.65px; color: var(--ink-strong); max-width: 18ch;
+  header { padding: 88px 0 56px; text-align: center; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; margin-bottom: 28px;
+    border: 1px solid var(--hairline); border-radius: 9999px;
+    font-size: 13px; color: var(--body);
   }
-  .lead { font-size: 18px; line-height: 28px; color: var(--body); max-width: 62ch; margin-top: 20px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 32px; }
+  .badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary); box-shadow: 0 0 0 3px rgba(0, 217, 146, 0.15);
+  }
+
+  h1 {
+    font-size: clamp(38px, 6.4vw, 76px);
+    font-weight: 500; line-height: 1.04; letter-spacing: -2px;
+    margin: 0 auto; max-width: 16ch;
+    background: linear-gradient(180deg, #ffffff 0%, #bdf3dd 55%, var(--primary) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lead {
+    font-size: 19px; line-height: 30px; color: var(--mute);
+    max-width: 46ch; margin: 22px auto 0;
+  }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 36px; }
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 16px; border-radius: 6px; border: 1px solid transparent;
+    padding: 14px 30px; border-radius: 9999px; border: 1px solid transparent;
     font-size: 16px; font-weight: 600; line-height: 24px;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
-  .btn:hover { text-decoration: none; }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
   .btn-primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
   .btn-primary:hover { background: var(--primary-soft); }
-  .btn-outline { color: var(--ink); border-color: var(--hairline); }
-  .btn-outline:hover { background: var(--canvas-soft); }
-  .shot { margin: 16px 0 72px; }
-  .shot img {
-    display: block; width: 100%; height: auto;
-    border: 1px solid var(--hairline); border-radius: 8px;
+  .btn-outline { background: var(--canvas-soft); color: var(--ink); border-color: var(--hairline); }
+  .btn-outline:hover { background: #222; }
+  /* Product shot in a browser frame, bleeding off the bottom of the fold. */
+  .shot { margin: 56px 0 72px; }
+  .frame {
+    border: 1px solid var(--hairline); border-radius: 14px;
+    background: var(--canvas-soft); overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0, 217, 146, 0.07), 0 20px 60px rgba(0, 0, 0, 0.6);
   }
-  .shot figcaption { margin-top: 12px; font-size: 12px; color: var(--mute); }
+  .frame-bar {
+    display: flex; align-items: center; gap: 7px;
+    padding: 11px 14px; border-bottom: 1px solid var(--hairline);
+  }
+  .frame-bar i { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3a; }
+  .frame img { display: block; width: 100%; height: auto; }
+  .shot figcaption { margin-top: 14px; font-size: 12px; color: var(--mute); text-align: center; }
 
   section { padding: 56px 0; border-top: 1px solid var(--hairline-dim); }
   h2 { font-size: 36px; font-weight: 400; line-height: 40px; letter-spacing: -0.9px; color: var(--ink-strong); }
@@ -125,12 +152,11 @@
   </nav>
 
   <header>
-    <h1>Your receipts, read and filed on your own machine.</h1>
+    <span class="badge"><span class="dot" aria-hidden="true"></span> Runs entirely in your browser</span>
+    <h1>Turn a pile of receipts into clean records</h1>
     <p class="lead">
-      Kiroku (記録, “records”) turns a folder of invoices, receipts, and bills into searchable,
-      exportable financial records. It reads the vendor, dates, and amounts off each document,
-      flags whatever it is unsure about, and hands you a CSV your accountant can open —
-      entirely inside your browser, with nothing uploaded anywhere.
+      Kiroku reads the vendor, dates, and totals off every invoice and receipt,
+      then hands you a CSV your accountant can open.
     </p>
     <div class="cta">
       <a class="btn btn-primary" href="/documents">Open Kiroku</a>
@@ -139,8 +165,11 @@
   </header>
 
   <figure class="shot">
-    <img src="screenshot.png" alt="Kiroku's document list, showing imported invoices with extracted vendors, dates, and totals." width="1200" height="907">
-    <figcaption>The document list. Vendors and amounts shown are fictional sample data.</figcaption>
+    <div class="frame">
+      <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img src="screenshot.png" alt="Kiroku's document list, showing imported invoices with extracted vendors, dates, and totals." width="1200" height="875">
+    </div>
+    <figcaption>Vendors and amounts shown are fictional sample data.</figcaption>
   </figure>
 
   <section id="features">
@@ -227,7 +256,7 @@ python run.py            <span class="c"># opens http://127.0.0.1:8000</span></p
   </section>
 
   <footer>
-    <span>MIT licensed. Your data stays in your data directory.</span>
+    <span>MIT licensed. Your documents stay in your browser.</span>
     <span class="links">
       <a href="https://github.com/jitenverma076/Kiroku">GitHub</a>
       <a href="https://github.com/jitenverma076/Kiroku/blob/main/docs/ARCHITECTURE.md">Architecture</a>

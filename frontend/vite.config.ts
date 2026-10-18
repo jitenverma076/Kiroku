@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -22,9 +22,12 @@ function landingAtRoot(): Plugin {
     name: 'kiroku-landing',
     closeBundle() {
       mkdirSync('dist', { recursive: true })
+      // Static hosts match the filesystem before applying rewrites, so the landing
+      // has to BE index.html. The app moves aside to app.html and is rewritten to.
+      if (existsSync('dist/index.html')) renameSync('dist/index.html', 'dist/app.html')
       for (const name of LANDING_ASSETS) {
         if (!existsSync(`${DOCS}${name}`)) continue
-        copyFileSync(`${DOCS}${name}`, `dist/${name === 'index.html' ? 'landing.html' : name}`)
+        copyFileSync(`${DOCS}${name}`, `dist/${name}`)
       }
     },
     configureServer(server) {
