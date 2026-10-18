@@ -145,8 +145,8 @@ export default function SettingsPage() {
         <section className="section">
           <div className="card-title"><h4>File support</h4></div>
           <p className="text-sm mb-4">
-            Kiroku reads the text layer of PDFs. Scanned pages and photos need OCR, which the
-            browser build does not include yet — import them and fill the fields in by hand.
+            Kiroku reads the text layer of PDFs directly. Scans and photos go through OCR in
+            your browser, which downloads its language data the first time you use it.
           </p>
           <div>
             <div className="field-row">

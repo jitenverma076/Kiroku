@@ -102,13 +102,6 @@ export async function deleteDocument(id: string): Promise<void> {
   await request(`/documents/${id}`, { method: 'DELETE' });
 }
 
-export async function bulkDeleteDocuments(ids: string[]): Promise<void> {
-  await request('/documents', {
-    method: 'DELETE',
-    body: JSON.stringify(ids),
-  });
-}
-
 export async function getReviewQueue(): Promise<DocumentSummary[]> {
   if (LOCAL) return local.getReviewQueue();
   return request<DocumentSummary[]>('/documents/review-queue');

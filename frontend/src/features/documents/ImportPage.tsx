@@ -101,7 +101,7 @@ export default function ImportPage({ onImported }: Props) {
     <div className="narrow">
       <PageHeader
         title="Import documents"
-        description="Add invoices, receipts, and bills. Kiroku reads the vendor, dates, and amounts from text-based PDFs; scans and photos import but need filling in by hand."
+        description="Add invoices, receipts, and bills. Kiroku reads the vendor, dates, and amounts from each one, in your browser."
       />
 
       <div className="stack-6">
