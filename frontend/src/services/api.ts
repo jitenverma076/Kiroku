@@ -156,8 +156,9 @@ export async function reprocessDocument(id: string): Promise<void> {
   await request(`/processing/${id}/reprocess`, { method: 'POST' });
 }
 
-export function getPreviewUrl(documentId: string): string {
-  return LOCAL ? '' : `${API_BASE}/processing/preview/${documentId}`;
+/** Resolves to a blob URL in browser mode, so the preview stays in the tab. */
+export async function getPreviewUrl(documentId: string): Promise<string> {
+  return LOCAL ? local.previewUrl(documentId) : `${API_BASE}/processing/preview/${documentId}`;
 }
 
 /** Resolves to a blob URL in browser mode, so the original stays in the tab. */
@@ -228,6 +229,19 @@ export async function removeTagFromDocument(documentId: string, tagId: string): 
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
+
+/** Back up everything to one file. Browser mode only — a backend has its own data dir. */
+export async function exportBackup(): Promise<Blob> {
+  if (!LOCAL) throw new Error('Backups are handled by the server in self-hosted mode');
+  return local.exportBackup();
+}
+
+export async function importBackup(file: File): Promise<number> {
+  if (!LOCAL) throw new Error('Backups are handled by the server in self-hosted mode');
+  return local.importBackup(file);
+}
+
+export const backupsSupported = (): boolean => LOCAL;
 
 export async function getSettings(): Promise<AppSettings> {
   if (LOCAL) return local.getSettings();

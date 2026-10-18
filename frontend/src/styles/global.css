@@ -590,7 +590,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cur
   position: relative;
 }
 
-.document-card-preview img { width: 100%; height: 100%; object-fit: cover; }
+.document-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Letterheads live at the top of a page; centring a tall scan shows blank paper. */
+  object-position: top;
+}
 
 .preview-placeholder {
   display: flex;

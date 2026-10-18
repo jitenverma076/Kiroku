@@ -265,12 +265,19 @@ export function extractFields(text: string): Extraction {
     .filter(c => c > 0);
   const overall = key.length ? Number((key.reduce((a, b) => a + b, 0) / key.length).toFixed(3)) : 0;
 
+  // Review is about the money being wrong, not about a single weak field: the
+  // vendor heuristic alone used to push every document into the queue.
+  const reconciles =
+    subtotal.value && tax.value && total.value
+      ? Math.abs(Number(subtotal.value) + Number(tax.value) - Number(total.value)) <= 0.02
+      : true;
+
   return {
     docType,
     vendor, docNumber, issueDate, dueDate, currency,
     subtotal, taxAmount: tax, totalAmount: total, paymentTerms,
     overallConfidence: overall,
-    needsReview: key.some(c => c < REVIEW_CONFIDENCE_THRESHOLD) || overall < REVIEW_CONFIDENCE_THRESHOLD,
+    needsReview: total.value === null || !reconciles || overall < REVIEW_CONFIDENCE_THRESHOLD,
   };
 }
 
@@ -322,6 +329,10 @@ export function selfCheck(): void {
 
   const full = extractFields(INVOICE);
   assert(full.totalAmount.value === '6238.75', 'end-to-end total');
+  // Totals that reconcile should not be forced into the review queue.
+  assert(full.needsReview === false, 'clean invoice is confirmed');
+  assert(extractFields('Total: $5.00\nSubtotal: $1.00\nTax: $1.00').needsReview, 'mismatch reviewed');
+  assert(extractFields('ACME LTD\nInvoice INV-9\nDate: 2026-01-02').needsReview, 'no total reviewed');
   assert(full.vendor.value === 'ACME STUDIO', 'end-to-end vendor');
   assert(full.docNumber.value === 'INV-2026-0188', 'end-to-end doc number');
 

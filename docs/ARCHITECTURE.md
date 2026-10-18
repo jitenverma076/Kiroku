@@ -1,71 +1,78 @@
 # Architecture
 
-## Stack
+Kiroku has two interchangeable engines behind one UI. By default the browser does the
+work; a Python backend can do it instead for people who want records in files on disk.
 
-- **Backend** — Python 3.11+, FastAPI, SQLAlchemy over SQLite (WAL mode)
-- **Frontend** — React 18, TypeScript, Vite; a single-page app served by the backend in production
-- **Text extraction** — pdfplumber for PDF text layers, Tesseract (via pytesseract) for scans and photos
-- **Previews** — pdf2image + poppler
-- **Field extraction** — labelled-regex parsing with per-field confidence scores
-- **Classification** — keyword and structure matching, optionally supplemented by a local zero-shot model
+## The seam
 
-Frontend and backend talk over REST on localhost.
+`frontend/src/services/api.ts` is the only module any component imports for data. It
+dispatches on one build-time value:
 
-## Layout
+```
+VITE_API_BASE unset  ->  services/local.ts   (IndexedDB, in the tab)
+VITE_API_BASE set    ->  fetch(`${VITE_API_BASE}/...`)  (FastAPI backend)
+```
+
+Components never know which is live, so neither engine can drift into the UI layer.
+
+## Browser engine (default)
+
+- **`services/extract.ts`** — labelled-regex field extraction and keyword
+  classification, with a confidence score per field.
+- **`services/store.ts`** — IndexedDB (`documents`, `files`, `previews`, `tags`) and
+  SHA-256 via Web Crypto.
+- **`services/local.ts`** — the pipeline: read text, extract, detect duplicates,
+  render a thumbnail, store. Also CSV export and JSON backup/restore.
+- **`pdf.js`** reads PDF text layers and rasterises page 1 for thumbnails. It is
+  ~480 kB, so it is a lazy chunk fetched on first import, not on page load.
+- **`tesseract.js`** handles scans and photos, and PDFs with no text layer. Its WASM
+  and language data download on first use.
+
+## Backend engine (optional)
+
+FastAPI, SQLAlchemy over SQLite (WAL), pdfplumber for PDF text, Tesseract for OCR,
+pdf2image/poppler for previews.
 
 ```
 backend/src/
-  main.py               FastAPI app, CORS, routers, SPA fallback
-  commands/             Route handlers
-  services/             Orchestration: import pipeline, CSV export, document CRUD
-  ai/                   Classification and field extraction
+  main.py               app, CORS, routers, static serving, SPA fallback
+  commands/             route handlers
+  services/             import pipeline, CSV export, document CRUD
+  ai/                   classification and field extraction
   document_processing/  PDF text layer and OCR
-  domain/               Pydantic models and enums
+  domain/               Pydantic models
   storage/              SQLAlchemy models, file store
-
-frontend/src/
-  app/App.tsx           Shell, routing, navigation
-  features/             One directory per screen
-  services/api.ts       Typed API client
-  components/ui/        Shared components
-  styles/global.css     Design tokens and component styles
 ```
+
+It also serves the landing page at `/` and the built SPA for app routes, so a
+self-hosted install is a single origin.
 
 ## Import pipeline
 
-1. Upload is written to managed storage under `data/documents/{id}/`.
-2. SHA-256 of the file is compared against existing records (exact duplicate), then
-   vendor + amount + date within ±7 days (probable duplicate).
-3. Text is read from the PDF text layer, falling back to OCR.
-4. The document is classified, then fields are extracted with confidence scores.
-5. Anything low-confidence, or whose subtotal + tax does not match the total, is
-   marked `review_needed` rather than confirmed.
+Identical in both engines:
 
-## Database
+1. Reject unsupported types and anything over 50 MB.
+2. Hash the file; an identical hash is an exact duplicate.
+3. Read the text layer, falling back to OCR.
+4. Classify, then extract fields with confidence scores.
+5. Flag as `review_needed` when the total is missing, when subtotal + tax does not
+   reconcile with the total, or when overall confidence is below 0.6.
+6. Compare vendor + amount + date (±7 days) against existing records for a probable
+   duplicate.
 
-- `documents` — file metadata, extracted fields, status, confidence, timestamps
-- `document_fields` — per-field value, confidence, and whether a user edited it
-- `tags` / `document_tags` — user-defined categories, many-to-many
+## Duplicated extraction rules
 
-Status moves `pending → processing → review_needed → confirmed`, or `→ error`.
-
-User edits set `user_edited`, and re-extraction will not overwrite those fields.
+`extract.ts` and `ai/extractor.py` implement the same rules in two languages, because
+either engine may run them. Both carry self-checks over identical cases
+(`npm run check`, `python -m ai.extractor`). Nothing enforces agreement automatically
+— if the browser engine ever gains everything the backend does, delete one.
 
 ## Network behaviour
 
-Document processing makes no network requests. The one exception is the optional
-classifier from `requirements-ml.txt`: Transformers contacts the Hugging Face Hub to
-fetch and revalidate model weights.
+The browser engine makes no requests with your documents in them. It fetches static
+assets, and on first use downloads the OCR WASM and language data.
 
-That load runs on a background thread and is never awaited, so an unreachable Hub costs
-nothing on the import path — `classify()` returns `None` until the model is ready and
-callers fall back to keyword matching. Install only `requirements.txt`, or set
-`KIROKU_DISABLE_ML=1`, to keep the process fully offline.
-
-## Configuration
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `KIROKU_DATA_DIR` | `./data` | Where documents, previews, and the database live |
-| `KIROKU_DISABLE_ML` | unset | Set to `1` to skip the classifier model entirely |
-| `HF_CLASSIFIER_MODEL` | `typeform/distilbert-base-uncased-mnli` | Classifier to load |
+The backend's optional classifier (`requirements-ml.txt`) downloads model weights from
+the Hugging Face Hub. That load runs on a background thread and is never awaited, so
+an unreachable Hub costs nothing on the import path — classification falls back to
+keywords. Install only `requirements.txt`, or set `KIROKU_DISABLE_ML=1`, to stay offline.

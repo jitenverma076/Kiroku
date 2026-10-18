@@ -11,6 +11,7 @@ const DB_VERSION = 1;
 export const DOCS = 'documents';
 export const FILES = 'files';
 export const TAGS = 'tags';
+export const PREVIEWS = 'previews';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -27,6 +28,7 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(FILES)) db.createObjectStore(FILES);
       if (!db.objectStoreNames.contains(TAGS)) db.createObjectStore(TAGS, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(PREVIEWS)) db.createObjectStore(PREVIEWS);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error('Could not open local storage'));

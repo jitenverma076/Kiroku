@@ -148,8 +148,8 @@
       <div>
         <h3>Reads the document</h3>
         <p>
-          Pulls text straight out of PDFs, and falls back to OCR for scans and phone photos.
-          Extracts vendor, document number, dates, currency, subtotal, tax, and total.
+          Reads the text layer of PDFs and runs OCR on scans and phone photos — all in
+          the tab. Extracts vendor, document number, dates, currency, subtotal, tax, and total.
         </p>
       </div>
       <div>
@@ -195,8 +195,9 @@
     <h2>Run it</h2>
     <p>
       Nothing to install — open it and start importing. Your documents are parsed and stored
-      in your browser, so they never reach a server. A self-hosted backend version (Python +
-      SQLite, with OCR for scanned pages) is in the repository if you want one.
+      in your browser, so they never reach a server. Because browser storage can be cleared,
+      Settings has a one-file backup and restore. A self-hosted Python backend is in the
+      repository if you would rather keep records in files on disk.
     </p>
 <pre><span class="c"># clone, then:</span>
 python3 -m venv venv &amp;&amp; source venv/bin/activate
@@ -217,9 +218,9 @@ python run.py            <span class="c"># opens http://127.0.0.1:8000</span></p
       Kiroku is a local tool, not a service. Worth knowing before you rely on it:
     </p>
     <ul>
-      <li><strong>No accounts, no sync, no cloud.</strong> It runs on one machine and listens on localhost.</li>
-      <li><strong>Nothing is encrypted at rest.</strong> The SQLite database and your original files are ordinary files — turn on full-disk encryption if the machine is shared.</li>
-      <li><strong>No automatic backups.</strong> Copy the data directory yourself.</li>
+      <li><strong>No accounts, no sync, no cloud.</strong> Your library lives in one browser on one device.</li>
+      <li><strong>Nothing is encrypted at rest.</strong> Browser storage is readable by anyone with your OS account — turn on full-disk encryption if the machine is shared.</li>
+      <li><strong>Browser storage can be cleared.</strong> "Clear site data" erases your library, so download a backup from Settings.</li>
       <li><strong>Extraction is not perfect.</strong> That is what the review queue is for; confirm before you export.</li>
     </ul>
   </section>

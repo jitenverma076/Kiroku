@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Tag as TagIcon, Plus, Trash2 } from 'lucide-react';
-import { getSettings, listTags, createTag, deleteTag, errorMessage } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { Tag as TagIcon, Plus, Trash2, Download, Upload } from 'lucide-react';
+import {
+  getSettings, listTags, createTag, deleteTag, errorMessage,
+  exportBackup, importBackup, backupsSupported, downloadBlob,
+} from '../../services/api';
 import type { AppSettings, Tag } from '../../types';
 import PageHeader from '../../components/ui/PageHeader';
 
@@ -10,6 +13,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [newTagName, setNewTagName] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
+  const [backupNote, setBackupNote] = useState<string | null>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -43,6 +48,26 @@ export default function SettingsPage() {
       setTags(prev => prev.filter(t => t.id !== tagId));
     } catch (err) {
       setTagError(errorMessage(err, 'Could not delete that category'));
+    }
+  };
+
+  const handleBackup = async () => {
+    setBackupNote(null);
+    try {
+      downloadBlob(await exportBackup(), `kiroku-backup-${new Date().toISOString().split('T')[0]}.json`);
+    } catch (err) {
+      setBackupNote(errorMessage(err, 'Could not create the backup'));
+    }
+  };
+
+  const handleRestore = async (file: File) => {
+    setBackupNote(null);
+    try {
+      const added = await importBackup(file);
+      setBackupNote(`Restored ${added} document${added === 1 ? '' : 's'}.`);
+      await loadAll();
+    } catch (err) {
+      setBackupNote(errorMessage(err, 'Could not read that backup'));
     }
   };
 
@@ -153,6 +178,34 @@ export default function SettingsPage() {
             their records never leave it, and are not encrypted at rest — turn on full-disk
             encryption if the machine is shared. Clearing site data erases them.
           </p>
+
+          {backupsSupported() && (
+            <>
+              <p className="text-sm mt-3">
+                Back up regularly — a browser that clears its site data takes your records with it.
+              </p>
+              {backupNote && <div className="alert mt-3">{backupNote}</div>}
+              <div className="flex items-center gap-2 mt-4">
+                <button className="btn btn-secondary btn-sm" onClick={handleBackup}>
+                  <Download size={14} aria-hidden /> Download backup
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => backupInput.current?.click()}>
+                  <Upload size={14} aria-hidden /> Restore
+                </button>
+                <input
+                  ref={backupInput}
+                  type="file"
+                  accept="application/json,.json"
+                  className="sr-only"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) handleRestore(file);
+                  }}
+                />
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>

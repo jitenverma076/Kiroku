@@ -287,8 +287,17 @@ def extract_fields(text: str, doc_type: str) -> ExtractionResult:
     key_confidences = [c for c in fields_and_confidences if c > 0]
     overall = round(sum(key_confidences) / len(key_confidences), 3) if key_confidences else 0.0
 
-    needs_review = any(c < REVIEW_CONFIDENCE_THRESHOLD for c in key_confidences if c > 0)
-    needs_review = needs_review or overall < REVIEW_CONFIDENCE_THRESHOLD
+    # Review is about the money being wrong, not about a single weak field: the
+    # vendor heuristic alone used to push every document into the queue.
+    reconciles = True
+    if subtotal_val is not None and tax_val is not None and total_val is not None:
+        reconciles = abs(subtotal_val + tax_val - total_val) <= 0.02
+
+    needs_review = (
+        total_val is None
+        or not reconciles
+        or overall < REVIEW_CONFIDENCE_THRESHOLD
+    )
 
     return ExtractionResult(
         doc_type=FieldExtraction(value=doc_type, confidence=0.80),
@@ -341,4 +350,9 @@ if __name__ == "__main__":  # python -m ai.extractor
     assert _extract_doc_number("NORTHWIND STUDIO LLC\nReference: CN-0092")[0] == "CN-0092"
     assert _extract_doc_number("CREDIT NOTE\nReference: CN-0092")[0] == "CN-0092"
     assert _extract_doc_number("ACME STUDIO LLC") == (None, 0.0)
+
+    # Totals that reconcile should not be forced into the review queue.
+    assert extract_fields(INVOICE, "invoice").needs_review is False
+    assert extract_fields("Total: $5.00\nSubtotal: $1.00\nTax: $1.00", "invoice").needs_review
+    assert extract_fields("ACME LTD\nInvoice INV-9\nDate: 2026-01-02", "invoice").needs_review
     print("extractor parsing: ok")

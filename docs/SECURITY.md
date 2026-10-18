@@ -7,33 +7,40 @@ the maintainers privately first.
 
 ## Threat model
 
-Kiroku runs on one machine and listens on localhost only. It is not multi-user and has
-no authentication — anyone with access to the account running it has access to the data.
+Kiroku is single-user. There is no account system, no server-side storage of your
+documents, and no multi-tenancy — which also means there is nothing protecting your
+data from anyone who can already use your browser profile or your machine.
 
 | Threat | Mitigation |
 |---|---|
-| Malformed or hostile document | Each file is processed in isolation; failures mark the document `error` and never abort the run |
-| Path traversal via filename | Paths are validated against the managed storage directory before any file operation |
-| Oversized upload | 50 MB per file, enforced at the API layer |
+| Malformed or hostile document | Parsing is sandboxed by the browser; a failure marks that document and never aborts the batch |
+| Oversized upload | 50 MB per file, rejected before parsing |
+| Data exfiltration | The browser engine sends no document data anywhere; the backend makes no network calls while processing |
+| Path traversal (self-hosted) | Paths are validated against the managed storage directory |
+| SQL injection (self-hosted) | All queries go through SQLAlchemy with bound parameters |
 | Sensitive content in logs | Logs record filenames and status, never document text or amounts |
-| SQL injection | All queries go through SQLAlchemy with bound parameters |
-| Data exfiltration | Processing makes no network calls; CORS is restricted to localhost |
 
-## What is not protected
+## Browser storage
 
-- **No encryption at rest.** The SQLite database and stored originals are plain files.
-  Enable full-disk encryption (FileVault, BitLocker, LUKS) if the machine is shared.
-- **No authentication.** Any local process running as your user can read the database.
-- **Browser dev tools** can inspect API responses, which contain your document data.
+Documents live in IndexedDB under the site's origin. What that means:
 
-## Network
+- **Not encrypted.** Anyone with access to your OS user account can read it. Turn on
+  full-disk encryption if the machine is shared.
+- **Erasable without warning.** "Clear site data", private windows, aggressive storage
+  cleanup, and browser resets all destroy it. Use **Settings → Download backup**.
+- **Per-origin and per-browser.** Nothing syncs between devices or profiles.
+- **Visible to the page.** Browser dev tools can read everything, as with any web app.
+- `crypto.subtle`, used for duplicate hashing, requires HTTPS or localhost.
 
-Document processing is offline. The optional classifier in `requirements-ml.txt`
-downloads model weights from the Hugging Face Hub on first use and caches them; after
-that it runs offline. Skip that file, or set `KIROKU_DISABLE_ML=1`, for a build that
-never reaches the network.
+## Self-hosted storage
 
-## Backups
+The SQLite database and stored originals are plain files in `KIROKU_DATA_DIR`,
+unencrypted, readable by any process running as your user. Back up that directory;
+nothing is backed up automatically.
 
-Nothing is backed up automatically. Copy `data/` to keep your documents and records;
-`data/previews/` can be regenerated.
+## Deployment note
+
+The hosted frontend is static. Do not expose the optional Python backend publicly as
+it stands: it has **no authentication** and a single shared database, so every visitor
+would read and delete every other visitor's documents. It is designed to be run
+locally, bound to `127.0.0.1`.

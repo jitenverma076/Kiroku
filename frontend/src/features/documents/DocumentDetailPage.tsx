@@ -31,6 +31,7 @@ export default function DocumentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fileHref, setFileHref] = useState('');
+  const [previewHref, setPreviewHref] = useState('');
 
   // Form state
   const [docType, setDocType] = useState<DocumentType>('invoice');
@@ -58,6 +59,7 @@ export default function DocumentDetailPage() {
       const doc = await getDocument(docId);
       setDocument(doc);
       setFileHref(await getOriginalFileUrl(docId));
+      setPreviewHref(doc.preview_path ? await getPreviewUrl(docId) : '');
       setDocType(doc.doc_type || 'unknown');
       setVendor(doc.vendor || '');
       setDocNumber(doc.doc_number || '');
@@ -236,9 +238,9 @@ export default function DocumentDetailPage() {
             className="flex items-center justify-center"
             style={{ background: 'var(--canvas-soft)', minHeight: 520, maxHeight: '75vh', overflow: 'auto' }}
           >
-            {document.preview_path ? (
+            {previewHref ? (
               <img
-                src={getPreviewUrl(document.id)}
+                src={previewHref}
                 alt={`Preview of ${document.filename}`}
                 style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
               />

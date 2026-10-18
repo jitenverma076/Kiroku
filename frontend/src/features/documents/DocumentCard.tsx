@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { FileText, AlertCircle, CheckCircle, Clock, XCircle, Check } from 'lucide-react';
 import type { DocumentSummary } from '../../types';
 import { getPreviewUrl } from '../../services/api';
@@ -36,6 +37,15 @@ const STATUS_META: Record<string, { label: string; Icon: typeof Clock; className
 };
 
 export default function DocumentCard({ document: doc, selected, onSelect, onClick }: Props) {
+  const [preview, setPreview] = useState('');
+
+  useEffect(() => {
+    if (!doc.preview_path) return;
+    let active = true;
+    getPreviewUrl(doc.id).then(url => { if (active) setPreview(url); });
+    return () => { active = false; };
+  }, [doc.id, doc.preview_path]);
+
   const status = STATUS_META[doc.status] ?? STATUS_META.pending;
   const { Icon } = status;
   const confidencePct = doc.confidence != null ? Math.round(doc.confidence * 100) : null;
@@ -43,9 +53,9 @@ export default function DocumentCard({ document: doc, selected, onSelect, onClic
   return (
     <article className={`document-card${doc.status === 'review_needed' ? ' review-needed' : ''}`}>
       <div className="document-card-preview">
-        {doc.preview_path ? (
+        {preview ? (
           <img
-            src={getPreviewUrl(doc.id)}
+            src={preview}
             alt=""
             loading="lazy"
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}

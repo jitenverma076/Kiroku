@@ -2,93 +2,93 @@
 
 Kiroku (記録, "records") turns a folder of invoices, receipts, and bills into a
 searchable, exportable set of financial records. It reads the vendor, dates, amounts,
-and tax off each document, flags anything it is unsure about for you to check, and
-exports a CSV your accountant can use.
+and tax off each document, flags anything it is unsure about, and exports a CSV your
+accountant can use.
 
-Everything runs on your own machine against a local SQLite database.
+**It runs entirely in your browser.** Documents are parsed, extracted, and stored in
+the tab — nothing is uploaded to a server. There is also a self-hosted backend if you
+would rather keep everything in a SQLite file on disk.
 
 ![MIT licence](https://img.shields.io/badge/licence-MIT-blue)
 
-## Features
+![Kiroku's document list](docs/screenshot.png)
 
-- Drag-and-drop import of PDFs, JPEG, PNG, TIFF, WEBP, and BMP, up to 50 MB each
-- Reads the PDF text layer directly, falling back to OCR for scans and photos
-- Extracts vendor, document number, issue and due dates, currency, subtotal, tax,
-  total, and payment terms, each with a confidence score
-- Duplicate detection: exact matches by file hash, probable matches by vendor,
-  amount, and date
-- A review queue holding anything extracted below the confidence threshold, so nothing
-  reaches an export without a human looking at it; the document view warns separately
-  when subtotal and tax do not add up to the total
-- User-defined categories and full-text search across vendors, numbers, and notes
-- CSV export, filterable by date range, type, and confirmed status
+## Use it
 
-Kiroku never invents a value it could not read — missing fields stay empty.
+Open the deployed app, or run the frontend yourself:
 
-## Requirements
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+```
 
-- Python 3.11+
-- Node 18+
-- Tesseract, for scanned documents and photos
-  (`brew install tesseract`, `apt install tesseract-ocr`)
-- Poppler, for PDF page previews (`brew install poppler`, `apt install poppler-utils`)
+`/` is the landing page and `/documents` is the app. Nothing else is required — no
+Python, no database, no API keys.
 
-## Setup
+## How it works
+
+| Step | In the browser |
+|---|---|
+| Read a PDF | `pdf.js` reads the text layer |
+| Read a scan or photo | `tesseract.js` runs OCR (WASM, downloaded on first use) |
+| Find the fields | labelled-regex extraction with a confidence score per field |
+| Spot duplicates | SHA-256 via Web Crypto, plus vendor + amount + date matching |
+| Store | IndexedDB, in your browser's own storage |
+| Export | CSV generated client-side |
+
+A document whose total cannot be read, or whose subtotal and tax do not reconcile
+with the total, goes to the review queue instead of being confirmed. Kiroku never
+invents a value it could not read — missing fields stay empty.
+
+## Back up your data
+
+Browser storage is erased by "clear site data", a private window, or a browser reset.
+**Settings → Storage → Download backup** writes one JSON file with every document and
+its original; **Restore** reads it back. Do this regularly if these records matter.
+
+## Self-hosting (optional)
+
+The repository also contains a Python backend — FastAPI, SQLite, pdfplumber, and
+Tesseract — for keeping records in ordinary files on disk you can back up with normal
+tools. It is not needed to use Kiroku.
 
 ```bash
 python3 -m venv venv && source venv/bin/activate
-pip install -r backend/requirements.txt
-
+pip install -r backend/requirements.txt    # Tesseract and Poppler for scans
 cd frontend && npm install && npm run build && cd ..
-
-python run.py
+python run.py                              # http://127.0.0.1:8000
 ```
 
-Then open http://127.0.0.1:8000. That address serves the landing page; "Open Kiroku"
-takes you into the app at `/documents`.
+To point a deployed frontend at a backend instead of the browser engine, build with
+`VITE_API_BASE=https://your-backend/api`. Leave it unset and everything stays local.
 
-For frontend development, run `npm run dev` in `frontend/` and use the Vite server on
-port 5173; it proxies the API to the backend.
-
-### Optional classifier
-
-`pip install -r backend/requirements-ml.txt` adds a zero-shot model that improves
-document-type classification. It downloads roughly 250 MB of weights from the Hugging
-Face Hub the first time it runs, then works offline.
-
-The model loads in the background and is never waited on, so importing a document is
-not held up by a slow or unreachable Hub — documents imported before it is ready are
-classified by keyword instead. Without the extra install, Kiroku always classifies by
-keyword and makes no network requests at all. `KIROKU_DISABLE_ML=1` turns it off
-without uninstalling.
-
-## Configuration
-
-| Variable | Default | Purpose |
+| Variable | Where | Purpose |
 |---|---|---|
-| `KIROKU_DATA_DIR` | `./data` | Where documents, previews, and the database live |
-| `KIROKU_DISABLE_ML` | unset | Set to `1` to skip the classifier model |
+| `VITE_API_BASE` | frontend build | Use a backend instead of browser storage |
+| `KIROKU_DATA_DIR` | backend | Where documents and the database live |
+| `KIROKU_CORS_ORIGINS` | backend | Comma-separated origins allowed to call the API |
+| `KIROKU_DISABLE_ML` | backend | Set to `1` to skip the optional classifier model |
 
-## Your data
+## Deploying
 
-Documents and records stay in `KIROKU_DATA_DIR` as ordinary files — a SQLite database
-and the original uploads. Nothing is encrypted at rest, so enable full-disk encryption
-if the machine is shared. Back up by copying that directory. See
-[docs/SECURITY.md](docs/SECURITY.md) for the threat model and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it fits together.
+The frontend is a static build. On Vercel, set the project's **root directory to
+`frontend`** — `vercel.json` lives there and rewrites `/` to the landing page and all
+other routes to the app.
 
-## Landing page
+## Development
 
-`docs/index.html` is a single self-contained landing page, served two ways:
+```bash
+npm run check    # extractor parity checks
+npm run lint
+npm run build
+```
 
-- **Locally** at `http://127.0.0.1:8000/`, with its main button pointing into the app.
-- **Publicly** via GitHub Pages — set Pages to deploy from the `main` branch `/docs`
-  folder, which publishes it at https://jitenverma076.github.io/Kiroku/. Off localhost
-  the same button becomes "Get started" and links to the install steps.
-
-The Vite dev server (`npm run dev`, port 5173) serves the app at `/` instead, so
-development goes straight to the UI.
+The extraction rules exist twice — `frontend/src/services/extract.ts` and
+`backend/src/ai/extractor.py` — because either can run them. Both ship self-checks
+over the same cases; change one and update the other.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Threat model in [docs/SECURITY.md](docs/SECURITY.md),
+design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

@@ -6,17 +6,24 @@
  * nothing is uploaded.
  */
 
-import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
 import type {
   AppSettings, DocumentDetail, DocumentListResponse, DocumentStatus, DocumentSummary,
   DocumentType, DocumentUpdate, DuplicateInfo, ImportResponse, SearchFilters, Stats, Tag,
 } from '../types';
 import { extractFields, type Extraction } from './extract';
-import { DOCS, FILES, TAGS, getAll, get, put, remove, sha256, storageUsage } from './store';
+import { DOCS, FILES, PREVIEWS, TAGS, getAll, get, put, remove, sha256, storageUsage } from './store';
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+/** pdf.js is ~500 kB, so it is fetched on first import rather than on page load. */
+async function loadPdfjs() {
+  const [pdfjs, worker] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+  ]);
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  return pdfjs;
+}
+
+const isPdf = (file: File) => /\.pdf$/i.test(file.name);
 
 const MAX_SIZE = 50 * 1024 * 1024;
 const ACCEPTED = /\.(pdf|jpe?g|png|tiff?|webp|bmp)$/i;
@@ -29,12 +36,14 @@ interface StoredDoc extends DocumentDetail {
 const now = () => new Date().toISOString();
 const num = (f: { value: string | null }) => (f.value === null ? null : Number(f.value));
 
-/** Read a PDF's text layer. Images need OCR, which this build does not ship. */
+/** Text from a PDF's own text layer, or OCR for scans and photos. */
 async function readText(file: File): Promise<string> {
-  if (!/\.pdf$/i.test(file.name)) return '';
+  if (!isPdf(file)) return ocr(file);
+
+  const pdfjs = await loadPdfjs();
   const task = pdfjs.getDocument({ data: await file.arrayBuffer() });
   const doc = await task.promise;
-  const pages: string[] = [];
+  const lines: string[] = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const content = await (await doc.getPage(i)).getTextContent();
     let line = '';
@@ -43,16 +52,59 @@ async function readText(file: File): Promise<string> {
       if (!('str' in item)) continue;
       const y = item.transform[5] as number;
       if (lastY !== null && Math.abs(y - lastY) > 2) {
-        pages.push(line.trim());
+        lines.push(line.trim());
         line = '';
       }
       line += item.str;
       lastY = y;
     }
-    pages.push(line.trim());
+    lines.push(line.trim());
   }
   await task.destroy();
-  return pages.filter(Boolean).join('\n');
+
+  const text = lines.filter(Boolean).join('\n');
+  // A PDF of a scan has no text layer; fall through to OCR.
+  return text.trim().length >= 20 ? text : await ocrPdfFirstPage(file);
+}
+
+/** Recognise text in an image. The worker and language data download on first use. */
+async function ocr(source: Blob): Promise<string> {
+  try {
+    const { recognize } = await import('tesseract.js');
+    const { data } = await recognize(source, 'eng');
+    return data.text ?? '';
+  } catch (e) {
+    console.warn('OCR unavailable, import the document and fill fields in by hand', e);
+    return '';
+  }
+}
+
+async function ocrPdfFirstPage(file: File): Promise<string> {
+  const blob = await renderFirstPage(file, 2);
+  return blob ? ocr(blob) : '';
+}
+
+/** Rasterise page 1, used for both the card thumbnail and OCR of scanned PDFs. */
+async function renderFirstPage(file: File, scale = 1): Promise<Blob | null> {
+  if (!isPdf(file)) return file;
+  try {
+    const pdfjs = await loadPdfjs();
+    const task = pdfjs.getDocument({ data: await file.arrayBuffer() });
+    const doc = await task.promise;
+    const page = await doc.getPage(1);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    await task.destroy();
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+  } catch (e) {
+    console.warn('Preview could not be rendered', e);
+    return null;
+  }
 }
 
 function toSummary(d: StoredDoc): DocumentSummary {
@@ -152,6 +204,11 @@ export async function uploadDocument(file: File): Promise<ImportResponse> {
   );
 
   await put(FILES, file, id);
+  const preview = await renderFirstPage(file);
+  if (preview) {
+    await put(PREVIEWS, preview, id);
+    doc.preview_path = id;
+  }
   await put(DOCS, doc);
 
   return {
@@ -239,6 +296,7 @@ export async function updateDocument(id: string, update: DocumentUpdate): Promis
 export async function deleteDocument(id: string): Promise<void> {
   await remove(DOCS, id);
   await remove(FILES, id);
+  await remove(PREVIEWS, id);
 }
 
 export async function getReviewQueue(): Promise<DocumentSummary[]> {
@@ -263,15 +321,19 @@ export async function getStats(): Promise<Stats> {
 // view — a handful of small blobs. Revoke on navigation if memory ever matters.
 const objectUrls = new Map<string, string>();
 
-export async function fileUrl(id: string): Promise<string> {
-  const cached = objectUrls.get(id);
+async function blobUrl(store: string, id: string): Promise<string> {
+  const key = `${store}:${id}`;
+  const cached = objectUrls.get(key);
   if (cached) return cached;
-  const file = await get<File>(FILES, id);
-  if (!file) return '';
-  const url = URL.createObjectURL(file);
-  objectUrls.set(id, url);
+  const blob = await get<Blob>(store, id);
+  if (!blob) return '';
+  const url = URL.createObjectURL(blob);
+  objectUrls.set(key, url);
   return url;
 }
+
+export const fileUrl = (id: string) => blobUrl(FILES, id);
+export const previewUrl = (id: string) => blobUrl(PREVIEWS, id);
 
 const CSV_COLUMNS = [
   'id', 'type', 'vendor', 'doc_number', 'issue_date', 'due_date', 'currency',
@@ -340,12 +402,70 @@ export async function removeTagFromDocument(documentId: string, tagId: string): 
   await put(DOCS, { ...doc, tags: doc.tags.filter(t => t.id !== tagId) });
 }
 
+const toBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+
+/**
+ * Everything needed to restore this library, as one JSON file.
+ *
+ * Browser storage is erased by "clear site data", so a backup is the durability
+ * story for records that have to survive a few tax years.
+ *
+ * ponytail: originals are inlined as base64, which holds the whole library in
+ * memory while writing. Stream to a zip if libraries get large.
+ */
+export async function exportBackup(): Promise<Blob> {
+  const docs = await getAll<StoredDoc>(DOCS);
+  const files: Record<string, string> = {};
+  for (const d of docs) {
+    const file = await get<File>(FILES, d.id);
+    if (file) files[d.id] = await toBase64(file);
+  }
+  const backup = {
+    kiroku_backup: 1,
+    exported_at: now(),
+    documents: docs,
+    tags: await getAll<Tag>(TAGS),
+    files,
+  };
+  return new Blob([JSON.stringify(backup)], { type: 'application/json' });
+}
+
+/** Restore a backup, skipping documents already present. Returns how many were added. */
+export async function importBackup(file: File): Promise<number> {
+  const data = JSON.parse(await file.text());
+  if (data?.kiroku_backup !== 1) throw new Error('Not a Kiroku backup file');
+
+  const existing = new Set((await getAll<StoredDoc>(DOCS)).map(d => d.id));
+  for (const tag of (data.tags ?? []) as Tag[]) await put(TAGS, tag);
+
+  let added = 0;
+  for (const doc of (data.documents ?? []) as StoredDoc[]) {
+    if (existing.has(doc.id)) continue;
+    const b64 = (data.files ?? {})[doc.id];
+    if (b64) {
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const restored = new File([bytes], doc.filename, { type: doc.mime_type });
+      await put(FILES, restored, doc.id);
+      const preview = await renderFirstPage(restored);
+      if (preview) await put(PREVIEWS, preview, doc.id);
+    }
+    await put(DOCS, doc);
+    added += 1;
+  }
+  return added;
+}
+
 export async function getSettings(): Promise<AppSettings> {
   const { files, bytes } = await storageUsage();
   return {
     app: { name: 'Kiroku', version: '1.0.0' },
     storage: { total_files: files, total_bytes: bytes },
-    // OCR needs a WASM engine this build does not ship; PDFs read their text layer.
-    capabilities: { pdfplumber: true, tesseract_ocr: false, pdf_preview: false },
+    capabilities: { pdfplumber: true, tesseract_ocr: true, pdf_preview: true },
   };
 }
