@@ -10,7 +10,13 @@ import type {
   DocumentUpdate, ImportResponse, SearchFilters, Stats, Tag,
 } from '../types';
 
-const API_BASE = '/api';
+import * as local from './local';
+
+// Kiroku runs entirely in the browser by default: documents are parsed, extracted,
+// and stored in this tab, and nothing is uploaded. Set VITE_API_BASE at build time
+// to talk to a self-hosted backend instead.
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+const LOCAL = API_BASE === '';
 
 class ApiError extends Error {
   status: number;
@@ -59,6 +65,7 @@ async function request<T>(
 // ── Documents ─────────────────────────────────────────────────────────────────
 
 export async function listDocuments(filters: SearchFilters = {}): Promise<DocumentListResponse> {
+  if (LOCAL) return local.listDocuments(filters);
   const params = new URLSearchParams();
   if (filters.query) params.set('query', filters.query);
   if (filters.doc_type) params.set('doc_type', filters.doc_type);
@@ -78,10 +85,12 @@ export async function listDocuments(filters: SearchFilters = {}): Promise<Docume
 }
 
 export async function getDocument(id: string): Promise<DocumentDetail> {
+  if (LOCAL) return local.getDocument(id);
   return request<DocumentDetail>(`/documents/${id}`);
 }
 
 export async function updateDocument(id: string, update: DocumentUpdate): Promise<DocumentDetail> {
+  if (LOCAL) return local.updateDocument(id, update);
   return request<DocumentDetail>(`/documents/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(update),
@@ -89,6 +98,7 @@ export async function updateDocument(id: string, update: DocumentUpdate): Promis
 }
 
 export async function deleteDocument(id: string): Promise<void> {
+  if (LOCAL) return local.deleteDocument(id);
   await request(`/documents/${id}`, { method: 'DELETE' });
 }
 
@@ -100,10 +110,12 @@ export async function bulkDeleteDocuments(ids: string[]): Promise<void> {
 }
 
 export async function getReviewQueue(): Promise<DocumentSummary[]> {
+  if (LOCAL) return local.getReviewQueue();
   return request<DocumentSummary[]>('/documents/review-queue');
 }
 
 export async function getStats(): Promise<Stats> {
+  if (LOCAL) return local.getStats();
   return request<Stats>('/documents/stats');
 }
 
@@ -113,6 +125,8 @@ export async function uploadDocument(
   file: File,
   skipDuplicateCheck = false,
 ): Promise<ImportResponse> {
+  if (LOCAL) return local.uploadDocument(file);
+
   const formData = new FormData();
   formData.append('file', file);
   formData.append('skip_duplicate_check', String(skipDuplicateCheck));
@@ -138,20 +152,24 @@ export async function uploadDocument(
 }
 
 export async function reprocessDocument(id: string): Promise<void> {
+  if (LOCAL) return local.reprocessDocument(id);
   await request(`/processing/${id}/reprocess`, { method: 'POST' });
 }
 
 export function getPreviewUrl(documentId: string): string {
-  return `${API_BASE}/processing/preview/${documentId}`;
+  return LOCAL ? '' : `${API_BASE}/processing/preview/${documentId}`;
 }
 
-export function getOriginalFileUrl(documentId: string): string {
-  return `${API_BASE}/processing/file/${documentId}`;
+/** Resolves to a blob URL in browser mode, so the original stays in the tab. */
+export async function getOriginalFileUrl(documentId: string): Promise<string> {
+  return LOCAL ? local.fileUrl(documentId) : `${API_BASE}/processing/file/${documentId}`;
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
 export async function exportCsv(documentIds?: string[]): Promise<Blob> {
+  if (LOCAL) return local.exportCsv(documentIds);
+
   const response = await fetch(`${API_BASE}/export/csv`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -179,10 +197,12 @@ export function downloadBlob(blob: Blob, filename: string): void {
 // ── Tags ─────────────────────────────────────────────────────────────────────
 
 export async function listTags(): Promise<Tag[]> {
+  if (LOCAL) return local.listTags();
   return request<Tag[]>('/tags');
 }
 
 export async function createTag(name: string): Promise<Tag> {
+  if (LOCAL) return local.createTag(name);
   return request<Tag>('/tags', {
     method: 'POST',
     body: JSON.stringify({ name }),
@@ -190,10 +210,12 @@ export async function createTag(name: string): Promise<Tag> {
 }
 
 export async function deleteTag(tagId: string): Promise<void> {
+  if (LOCAL) return local.deleteTag(tagId);
   await request(`/tags/${tagId}`, { method: 'DELETE' });
 }
 
 export async function addTagToDocument(documentId: string, tagName: string): Promise<void> {
+  if (LOCAL) return local.addTagToDocument(documentId, tagName);
   await request(`/tags/documents/${documentId}`, {
     method: 'POST',
     body: JSON.stringify({ tag_name: tagName }),
@@ -201,11 +223,13 @@ export async function addTagToDocument(documentId: string, tagName: string): Pro
 }
 
 export async function removeTagFromDocument(documentId: string, tagId: string): Promise<void> {
+  if (LOCAL) return local.removeTagFromDocument(documentId, tagId);
   await request(`/tags/documents/${documentId}/${tagId}`, { method: 'DELETE' });
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export async function getSettings(): Promise<AppSettings> {
+  if (LOCAL) return local.getSettings();
   return request<AppSettings>('/settings');
 }

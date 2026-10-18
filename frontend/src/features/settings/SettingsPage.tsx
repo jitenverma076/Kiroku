@@ -120,8 +120,8 @@ export default function SettingsPage() {
         <section className="section">
           <div className="card-title"><h4>File support</h4></div>
           <p className="text-sm mb-4">
-            Kiroku reads text directly from PDFs. Scanned pages and photos need Tesseract installed
-            on this computer.
+            Kiroku reads the text layer of PDFs. Scanned pages and photos need OCR, which the
+            browser build does not include yet — import them and fill the fields in by hand.
           </p>
           <div>
             <div className="field-row">
@@ -133,13 +133,13 @@ export default function SettingsPage() {
             <div className="field-row">
               <span>Scans and photos (OCR)</span>
               <span className={caps?.tesseract_ocr ? 'text-accent' : 'text-warn'}>
-                {caps?.tesseract_ocr ? 'Ready' : 'Tesseract not installed'}
+                {caps?.tesseract_ocr ? 'Ready' : 'Not in this build'}
               </span>
             </div>
             <div className="field-row">
               <span>Page previews</span>
               <span className={caps?.pdf_preview ? 'text-accent' : 'text-muted'}>
-                {caps?.pdf_preview ? 'Ready' : 'Built-in viewer'}
+                {caps?.pdf_preview ? 'Ready' : 'Opens the original'}
               </span>
             </div>
           </div>
@@ -149,9 +149,9 @@ export default function SettingsPage() {
           <div className="card-title"><h4>Storage</h4></div>
           <p className="text-sm">
             {settings?.storage.total_files ?? 0} file
-            {settings?.storage.total_files === 1 ? '' : 's'}, {size} on this computer. Documents and
-            their records stay in a local SQLite database, which is not encrypted — turn on
-            full-disk encryption if the machine is shared.
+            {settings?.storage.total_files === 1 ? '' : 's'}, {size} on this device. Documents and
+            their records never leave it, and are not encrypted at rest — turn on full-disk
+            encryption if the machine is shared. Clearing site data erases them.
           </p>
         </section>
       </div>

@@ -7,16 +7,19 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "check": "esbuild src/services/extract.ts --bundle --format=esm --outfile=node_modules/.cache/extract.mjs --log-level=warning && node -e \"import('./node_modules/.cache/extract.mjs').then(m=>m.selfCheck())\""
   },
   "dependencies": {
+    "lucide-react": "^0.460.0",
+    "pdfjs-dist": "^6.4.299",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.26.0",
     "react-dropzone": "^14.2.3",
-    "lucide-react": "^0.460.0"
+    "react-router-dom": "^6.26.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

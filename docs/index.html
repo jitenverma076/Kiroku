@@ -69,11 +69,6 @@
   .btn-primary:hover { background: var(--primary-soft); }
   .btn-outline { color: var(--ink); border-color: var(--hairline); }
   .btn-outline:hover { background: var(--canvas-soft); }
-  .chip {
-    background: var(--canvas-soft); color: #f5f6f7; border-radius: 6px;
-    padding: 10px 14px; font-family: var(--font-mono); font-size: 13px;
-  }
-
   .shot { margin: 16px 0 72px; }
   .shot img {
     display: block; width: 100%; height: auto;
@@ -123,7 +118,7 @@
     <a class="brand" href="./"><img class="mark" src="logo.svg" alt="" width="26" height="26"> Kiroku</a>
     <span class="links">
       <a href="#features">Features</a>
-      <a href="#install">Install</a>
+      <a href="#run">Run it</a>
       <a class="gh" href="https://github.com/jitenverma076/Kiroku">GitHub</a>
     </span>
   </nav>
@@ -133,12 +128,12 @@
     <p class="lead">
       Kiroku (記録, “records”) turns a folder of invoices, receipts, and bills into searchable,
       exportable financial records. It reads the vendor, dates, and amounts off each document,
-      flags whatever it is unsure about, and hands you a CSV your accountant can open.
+      flags whatever it is unsure about, and hands you a CSV your accountant can open —
+      entirely inside your browser, with nothing uploaded anywhere.
     </p>
     <div class="cta">
-      <a class="btn btn-primary" id="cta" href="#install">Get started</a>
+      <a class="btn btn-primary" href="/documents">Open Kiroku</a>
       <a class="btn btn-outline" href="https://github.com/jitenverma076/Kiroku">View source</a>
-      <span class="chip">git clone &amp;&amp; python run.py</span>
     </div>
   </header>
 
@@ -196,10 +191,12 @@
     </div>
   </section>
 
-  <section id="install">
-    <h2>Install</h2>
+  <section id="run">
+    <h2>Run it</h2>
     <p>
-      You need Python 3.11+, Node 18+, and — for scanned documents — Tesseract and Poppler.
+      Nothing to install — open it and start importing. Your documents are parsed and stored
+      in your browser, so they never reach a server. A self-hosted backend version (Python +
+      SQLite, with OCR for scanned pages) is in the repository if you want one.
     </p>
 <pre><span class="c"># clone, then:</span>
 python3 -m venv venv &amp;&amp; source venv/bin/activate
@@ -209,10 +206,8 @@ cd frontend &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; cd ..
 
 python run.py            <span class="c"># opens http://127.0.0.1:8000</span></pre>
     <p>
-      An optional zero-shot classifier (<code>backend/requirements-ml.txt</code>) improves
-      document-type detection. It downloads roughly 250&nbsp;MB of model weights from the Hugging
-      Face Hub on first use, then runs offline. Skip it and classification falls back to
-      keywords with no network access at all.
+      Full steps, configuration, and the optional local classifier are in the
+      <a href="https://github.com/jitenverma076/Kiroku#readme">README</a>.
     </p>
   </section>
 
@@ -238,15 +233,6 @@ python run.py            <span class="c"># opens http://127.0.0.1:8000</span></p
     </span>
   </footer>
 </div>
-
-<script>
-  // Running from the local app: send people straight into it.
-  if (['localhost', '127.0.0.1'].includes(location.hostname)) {
-    var cta = document.getElementById('cta');
-    cta.href = '/documents';
-    cta.textContent = 'Open Kiroku';
-  }
-</script>
 
 </body>
 </html>

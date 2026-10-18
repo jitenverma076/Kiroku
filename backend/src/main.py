@@ -25,6 +25,17 @@ logging.basicConfig(
 )
 log = logging.getLogger("kiroku")
 
+# Local dev by default. Set KIROKU_CORS_ORIGINS (comma-separated) to allow a
+# deployed frontend, e.g. "https://kiroku.vercel.app".
+CORS_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        "KIROKU_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",")
+    if o.strip()
+]
+
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,12 +58,7 @@ app = FastAPI(
 # ── CORS — localhost only ─────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",   # Vite dev server
-        "http://localhost:8000",   # Production (served by FastAPI)
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -115,9 +121,15 @@ else:
             "app": "Kiroku",
             "version": "1.0.0",
             "status": "running",
-            "ui": "Run 'npm run dev' in ./frontend for the UI",
+            "ui": "not built — see the README to build the frontend",
         }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+    # Hosts such as Render inject $PORT and require binding all interfaces.
+    uvicorn.run(
+        "main:app",
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "8000")),
+    )

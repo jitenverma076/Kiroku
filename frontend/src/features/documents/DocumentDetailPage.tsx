@@ -30,6 +30,7 @@ export default function DocumentDetailPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [fileHref, setFileHref] = useState('');
 
   // Form state
   const [docType, setDocType] = useState<DocumentType>('invoice');
@@ -56,6 +57,7 @@ export default function DocumentDetailPage() {
     try {
       const doc = await getDocument(docId);
       setDocument(doc);
+      setFileHref(await getOriginalFileUrl(docId));
       setDocType(doc.doc_type || 'unknown');
       setVendor(doc.vendor || '');
       setDocNumber(doc.doc_number || '');
@@ -180,7 +182,7 @@ export default function DocumentDetailPage() {
           </span>
 
           <a
-            href={getOriginalFileUrl(document.id)}
+            href={fileHref}
             download={document.filename}
             className="btn btn-secondary btn-sm"
           >
@@ -220,7 +222,7 @@ export default function DocumentDetailPage() {
           <div className="card-header">
             <h4>Source</h4>
             <a
-              href={getOriginalFileUrl(document.id)}
+              href={fileHref}
               target="_blank"
               rel="noreferrer"
               className="btn btn-ghost btn-sm btn-icon"
@@ -242,7 +244,7 @@ export default function DocumentDetailPage() {
               />
             ) : document.mime_type === 'application/pdf' ? (
               <iframe
-                src={getOriginalFileUrl(document.id)}
+                src={fileHref}
                 title={`${document.filename} preview`}
                 style={{ width: '100%', height: 600, border: 'none' }}
               />
@@ -250,7 +252,7 @@ export default function DocumentDetailPage() {
               <div className="empty-state">
                 <p>No preview was generated for this format.</p>
                 <a
-                  href={getOriginalFileUrl(document.id)}
+                  href={fileHref}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondary btn-sm"
