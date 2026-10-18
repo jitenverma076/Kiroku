@@ -1,0 +1,6 @@
+# Optional: adds a zero-shot classifier that supplements keyword classification.
+# Downloads ~250MB of model weights from the Hugging Face Hub on first use.
+# Without these, Kiroku classifies documents by keyword and never touches the network.
+-r requirements.txt
+torch>=2.2.0
+transformers>=4.40.0

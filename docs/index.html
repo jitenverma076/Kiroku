@@ -1,0 +1,252 @@
+<!doctype html>
+<!-- Landing page for GitHub Pages (Settings → Pages → deploy from branch → /docs).
+     Replace REPO_URL below if the repository moves. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#101010">
+<title>Kiroku — invoice and receipt records that stay on your machine</title>
+<meta name="description" content="Kiroku turns a folder of invoices and receipts into searchable, exportable financial records. Open source, runs locally, exports CSV.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #101010;
+    --canvas-soft: #1a1a1a;
+    --hairline: #3d3a39;
+    --hairline-dim: #262524;
+    --primary: #00d992;
+    --primary-soft: #2fd6a1;
+    --on-primary: #0a0a0a;
+    --ink: #f2f2f2;
+    --ink-strong: #fff;
+    --body: #bdbdbd;
+    --mute: #8b949e;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "calt", "rlig";
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--primary-soft); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--font-mono); font-size: 13px; }
+
+  nav { display: flex; align-items: center; gap: 24px; padding: 20px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink-strong); }
+  .brand:hover { text-decoration: none; }
+  .mark { display: block; }
+  nav .links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
+  nav .links a { color: var(--body); }
+
+  header { padding: 72px 0 48px; }
+  h1 {
+    font-size: 60px; font-weight: 400; line-height: 1.05;
+    letter-spacing: -0.65px; color: var(--ink-strong); max-width: 18ch;
+  }
+  .lead { font-size: 18px; line-height: 28px; color: var(--body); max-width: 62ch; margin-top: 20px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 32px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 16px; border-radius: 6px; border: 1px solid transparent;
+    font-size: 16px; font-weight: 600; line-height: 24px;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-soft); }
+  .btn-outline { color: var(--ink); border-color: var(--hairline); }
+  .btn-outline:hover { background: var(--canvas-soft); }
+  .chip {
+    background: var(--canvas-soft); color: #f5f6f7; border-radius: 6px;
+    padding: 10px 14px; font-family: var(--font-mono); font-size: 13px;
+  }
+
+  .shot { margin: 16px 0 72px; }
+  .shot img {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--hairline); border-radius: 8px;
+  }
+  .shot figcaption { margin-top: 12px; font-size: 12px; color: var(--mute); }
+
+  section { padding: 56px 0; border-top: 1px solid var(--hairline-dim); }
+  h2 { font-size: 36px; font-weight: 400; line-height: 40px; letter-spacing: -0.9px; color: var(--ink-strong); }
+  h3 { font-size: 18px; font-weight: 600; color: var(--ink-strong); margin-bottom: 8px; }
+  section > p { color: var(--body); max-width: 62ch; margin-top: 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 40px; }
+  .grid p { color: var(--body); font-size: 15px; }
+
+  ul { margin-top: 20px; padding-left: 20px; color: var(--body); }
+  li { margin-bottom: 10px; }
+  li strong { color: var(--ink-strong); font-weight: 600; }
+
+  pre {
+    background: var(--canvas-soft); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 20px; overflow-x: auto; margin-top: 24px;
+    font-family: var(--font-mono); font-size: 13px; line-height: 20px; color: #f5f6f7;
+  }
+  pre .c { color: var(--mute); }
+
+  footer {
+    border-top: 1px solid var(--hairline-dim); padding: 40px 0 64px;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+    font-size: 14px; color: var(--mute);
+  }
+  footer .links { margin-left: auto; display: flex; gap: 20px; }
+
+  @media (max-width: 760px) {
+    h1 { font-size: 32px; }
+    h2 { font-size: 26px; line-height: 32px; }
+    .grid { grid-template-columns: 1fr; gap: 28px; }
+    header { padding: 40px 0 32px; }
+    nav .links a:not(.gh) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <a class="brand" href="./"><img class="mark" src="logo.svg" alt="" width="26" height="26"> Kiroku</a>
+    <span class="links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a class="gh" href="https://github.com/YOUR-ORG/kiroku">GitHub</a>
+    </span>
+  </nav>
+
+  <header>
+    <h1>Your receipts, read and filed on your own machine.</h1>
+    <p class="lead">
+      Kiroku (記録, “records”) turns a folder of invoices, receipts, and bills into searchable,
+      exportable financial records. It reads the vendor, dates, and amounts off each document,
+      flags whatever it is unsure about, and hands you a CSV your accountant can open.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" id="cta" href="#install">Get started</a>
+      <a class="btn btn-outline" href="https://github.com/YOUR-ORG/kiroku">View source</a>
+      <span class="chip">git clone &amp;&amp; python run.py</span>
+    </div>
+  </header>
+
+  <figure class="shot">
+    <img src="screenshot.png" alt="Kiroku's document list, showing imported invoices with extracted vendors, dates, and totals." width="1200" height="907">
+    <figcaption>The document list. Vendors and amounts shown are fictional sample data.</figcaption>
+  </figure>
+
+  <section id="features">
+    <h2>What it does</h2>
+    <div class="grid">
+      <div>
+        <h3>Reads the document</h3>
+        <p>
+          Pulls text straight out of PDFs, and falls back to OCR for scans and phone photos.
+          Extracts vendor, document number, dates, currency, subtotal, tax, and total.
+        </p>
+      </div>
+      <div>
+        <h3>Checks its own work</h3>
+        <p>
+          Every field carries a confidence score. Anything uncertain goes to a review queue
+          instead of your books, and the document view warns when subtotal and tax do not add
+          up to the total.
+        </p>
+      </div>
+      <div>
+        <h3>Catches duplicates</h3>
+        <p>
+          Exact duplicates by file hash, and probable ones by matching vendor, amount, and date
+          within a week — so the same bill does not get filed twice.
+        </p>
+      </div>
+      <div>
+        <h3>Stays searchable</h3>
+        <p>
+          Full-text search across vendors, document numbers, and notes, with filters for type,
+          status, date range, and amount.
+        </p>
+      </div>
+      <div>
+        <h3>Exports clean CSV</h3>
+        <p>
+          A fixed, documented schema in UTF-8 RFC-4180 CSV. Filter by date range, type, or
+          confirmed-only before you download.
+        </p>
+      </div>
+      <div>
+        <h3>Never invents a number</h3>
+        <p>
+          If a value cannot be read, the field stays empty and the document waits for you.
+          Nothing is guessed to make the output look complete.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p>
+      You need Python 3.11+, Node 18+, and — for scanned documents — Tesseract and Poppler.
+    </p>
+<pre><span class="c"># clone, then:</span>
+python3 -m venv venv &amp;&amp; source venv/bin/activate
+pip install -r backend/requirements.txt
+
+cd frontend &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; cd ..
+
+python run.py            <span class="c"># opens http://127.0.0.1:8000</span></pre>
+    <p>
+      An optional zero-shot classifier (<code>backend/requirements-ml.txt</code>) improves
+      document-type detection. It downloads roughly 250&nbsp;MB of model weights from the Hugging
+      Face Hub on first use, then runs offline. Skip it and classification falls back to
+      keywords with no network access at all.
+    </p>
+  </section>
+
+  <section>
+    <h2>What it is not</h2>
+    <p>
+      Kiroku is a local tool, not a service. Worth knowing before you rely on it:
+    </p>
+    <ul>
+      <li><strong>No accounts, no sync, no cloud.</strong> It runs on one machine and listens on localhost.</li>
+      <li><strong>Nothing is encrypted at rest.</strong> The SQLite database and your original files are ordinary files — turn on full-disk encryption if the machine is shared.</li>
+      <li><strong>No automatic backups.</strong> Copy the data directory yourself.</li>
+      <li><strong>Extraction is not perfect.</strong> That is what the review queue is for; confirm before you export.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>MIT licensed. Your data stays in your data directory.</span>
+    <span class="links">
+      <a href="https://github.com/YOUR-ORG/kiroku">GitHub</a>
+      <a href="https://github.com/YOUR-ORG/kiroku/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+      <a href="https://github.com/YOUR-ORG/kiroku/blob/main/docs/SECURITY.md">Security</a>
+    </span>
+  </footer>
+</div>
+
+<script>
+  // Running from the local app: send people straight into it.
+  if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+    var cta = document.getElementById('cta');
+    cta.href = '/documents';
+    cta.textContent = 'Open Kiroku';
+  }
+</script>
+
+</body>
+</html>
